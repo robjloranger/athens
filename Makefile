@@ -21,6 +21,7 @@ verify:
 	./scripts/check_gofmt.sh
 	./scripts/check_golint.sh
 	./scripts/check_deps.sh
+	./scripts/check_conflicts.sh
 
 .PHONY: test
 test:
@@ -35,15 +36,26 @@ test-unit:
 test-e2e:
 	./scripts/test_e2e.sh
 
+.PHONY: docker
+docker: olympus-docker proxy-docker
+
 .PHONY: olympus-docker
 olympus-docker:
-	docker build -t gopackages/olympus -f cmd/olympus/Dockerfile .
+	docker build -t gomods/olympus -f cmd/olympus/Dockerfile .
 
+.PHONY: proxy-docker
+proxy-docker:
+	docker build -t gomods/proxy -f cmd/proxy/Dockerfile .
+
+.PHONY: docker-push
+docker-push: docker
+	./scripts/push-docker-images.sh
+
+bench:
+	./scripts/benchmark.sh
 
 .PHONY: alldeps
 alldeps:
-	docker-compose -p athensdev up -d mysql
-	docker-compose -p athensdev up -d postgres
 	docker-compose -p athensdev up -d mongo
 	docker-compose -p athensdev up -d redis
 	docker-compose -p athensdev up -d minio
@@ -58,10 +70,8 @@ dev:
 
 .PHONY: down
 down:
-	docker-compose -p athensdev down
-	docker volume prune
+	docker-compose -p athensdev down -v
 
 .PHONY: dev-teardown
 dev-teardown:
-	docker-compose -p athensdev down
-	docker volume prune
+	docker-compose -p athensdev down -v
